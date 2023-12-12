@@ -33,3 +33,22 @@ def bit16_to_Bit8(inputRaster, outputRaster, outputPixType='Byte', outputFormat=
     print("Conversion command:", cmd)
     subprocess.call(cmd)
 
+def convert_images(src_directory, dst_directory):
+    '''
+    Convert all GeoTIFF images in a directory to PNG format.
+
+    Parameters:
+    src_directory (str): Path to the source directory containing GeoTIFF images.
+    dst_directory (str): Path to the destination directory to save PNG images.
+
+    Returns:
+    None
+    '''
+    os.makedirs(dst_directory, exist_ok=True)
+    files = sorted(os.listdir(src_directory))
+
+    for file in files:
+        if file.endswith('.tif'):
+            src_path = os.path.join(src_directory, file)
+            dst_path = os.path.join(dst_directory, file.replace('.tif', '.png'))
+            bit16_to_Bit8(src_path, dst_path)
