@@ -170,3 +170,44 @@ class SpaceNetDataset(utils.Dataset):
             class_ids = np.array([])
 
         return masks, class_ids
+def train_model(dataset_dir, model_dir, coco_model_path, config, init_with="last", epochs=200):
+    """
+    Function to train the Mask RCNN model.
+
+    Parameters:
+    dataset_dir (str): Directory of the dataset.
+    model_dir (str): Directory to save logs and trained model.
+    coco_model_path (str): Path to COCO model weights.
+    config (Config): Configuration for training.
+    init_with (str): Which weights to start with: 'imagenet', 'coco', or 'last'.
+    epochs (int): Number of training epochs.
+    """
+    # Load the training and validation datasets
+    dataset_train = SpaceNetDataset()
+    dataset_train.load_dataset(dataset_dir, 0, 3080)
+    dataset_train.prepare()
+
+    dataset_val = SpaceNetDataset()
+    dataset_val.load_dataset(dataset_dir, 3081, 3850)
+    dataset_val.prepare()
+
+    # Create the model in training mode
+    model = modellib.MaskRCNN(mode="training", config=config, model_dir=model_dir)
+
+    # Load weights
+    if init_with == "imagenet":
+        model.load_weights(model.get_imagenet_weights(), by_name=True)
+    elif init_with == "coco":
+        model.load_weights(coco_model_path, by_name=True,
+                           exclude=["mrcnn_class_logits", "mrcnn_bbox_fc", "mrcnn_bbox", "mrcnn_mask"])
+    elif init_with == "last":
+        model.load_weights(model.find_last(), by_name=True)
+
+    # Train the model
+    model.train(dataset_train, dataset_val,
+                learning_rate=config.LEARNING_RATE,
+                epochs=epochs,
+                layers='all')
+
+
+train_model(DATASET_DIR, MODEL_DIR, COCO_MODEL_PATH, config, init_with="coco", epochs=200)
