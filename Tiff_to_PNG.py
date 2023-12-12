@@ -5,37 +5,31 @@ import subprocess
 
 def bit16_to_Bit8(inputRaster, outputRaster, outputPixType='Byte', outputFormat='png', percentiles=[2, 98]):
     '''
-    Convert 16bit image to 8bit
+    Convert 16bit image to 8bit.
+
+    Parameters:
+    inputRaster (str): Path to the input raster image.
+    outputRaster (str): Path to the output raster image.
+    outputPixType (str): Pixel type of the output image. Default is 'Byte'.
+    outputFormat (str): Format of the output image. Default is 'png'.
+    percentiles (list): Percentiles to use for rescaling. Default is [2, 98].
+
+    Returns:
+    None
     '''
-  
     srcRaster = gdal.Open(inputRaster)
-    cmd = ['gdal_translate', '-ot', outputPixType, '-of',
-           outputFormat]
+    cmd = ['gdal_translate', '-ot', outputPixType, '-of', outputFormat]
 
-    # iterate through bands
+    # Iterate through bands and rescale
     for bandId in range(srcRaster.RasterCount):
-        bandId = bandId+1
-        band = srcRaster.GetRasterBand(bandId)
-
-        bmin = band.GetMinimum()
-        bmax = band.GetMaximum()
-        # if not exist minimum and maximum values
-        if bmin is None or bmax is None:
-            (bmin, bmax) = band.ComputeRasterMinMax(1)
-        # else, rescale
+        band = srcRaster.GetRasterBand(bandId + 1)
         band_arr_tmp = band.ReadAsArray()
-        bmin = np.percentile(band_arr_tmp.flatten(),
-                             percentiles[0])
-        bmax= np.percentile(band_arr_tmp.flatten(),
-                            percentiles[1])
+        bmin = np.percentile(band_arr_tmp.flatten(), percentiles[0])
+        bmax = np.percentile(band_arr_tmp.flatten(), percentiles[1])
 
-        cmd.append('-scale_{}'.format(bandId))
-        cmd.append('{}'.format(bmin))
-        cmd.append('{}'.format(bmax))
-        cmd.append('{}'.format(0))
-        cmd.append('{}'.format(255))
-    cmd.append(inputRaster)
-    cmd.append(outputRaster)
-    print("Conversin command:", cmd)
+        cmd.extend(['-scale_{}'.format(bandId + 1), str(bmin), str(bmax), '0', '255'])
+
+    cmd.extend([inputRaster, outputRaster])
+    print("Conversion command:", cmd)
     subprocess.call(cmd)
 
